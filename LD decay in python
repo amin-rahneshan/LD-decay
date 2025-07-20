@@ -1,0 +1,52 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+
+df = pd.read_csv('C:\Users\Sepid\Desktop\LD for A,B,D.csv') # Load and clean data in csv file
+df['Dist_bp'] = df['Dist_bp'] / 100
+clean_df = df.copy()
+clean_df['R^2'] = pd.to_numeric(clean_df['R^2'], errors='coerce')
+clean_df['Dist_bp'] = pd.to_numeric(clean_df['Dist_bp'], errors='coerce')
+clean_df = clean_df.replace([np.inf, -np.inf], np.nan)
+clean_df = clean_df.dropna(subset=['R^2', 'Dist_bp'])
+if clean_df.empty:
+raise ValueError("No valid data remaining after cleaning")
+def decay_func(x, a, b, c):
+return a * np.exp(-b * x) + c
+x_data = clean_df['Dist_bp'].values
+y_data = clean_df['R^2'].values
+mean_r2 = np.mean(y_data)
+param_bounds = ([0.1, 0.001, 0], [1, 10, 0.2])
+try:
+params, _ = curve_fit(decay_func, x_data, y_data,
+p0=[0.5, 0.05, 0.05],
+bounds=param_bounds,
+maxfev=10000)
+except RuntimeError:
+params = [0.5, 0.05, 0.05]
+x_smooth = np.linspace(0, max(x_data), 500)
+y_smooth = decay_func(x_smooth, *params)
+threshold = 0.1
+below_threshold = x_smooth[y_smooth < threshold]
+decay_point = below_threshold[0] if len(below_threshold) > 0 else None
+plt.figure(figsize=(10, 6))
+plt.scatter(clean_df['Dist_bp'], clean_df['R^2'],
+alpha=0.6, color='blue', edgecolor='k')
+plt.plot(x_smooth, y_smooth, 'r-', linewidth=2)
+if decay_point:
+plt.axvline(x=decay_point, color='green', linestyle='--')
+plt.axhline(y=threshold, color='black', linestyle=':')
+plt.xlabel('Genetic Distance (cM)')
+plt.ylabel('LD (r²)')
+plt.grid(alpha=0.2)
+plt.tight_layout()
+plt.savefig('LD_decay_analysis.jpg', dpi=300, format='jpeg')
+plt.show()
+print("\nLinkage Disequilibrium (LD) Analysis Results:")
+print("----------------------------------------")
+print(f"Mean R² between markers: {mean_r2:.4f}")
+if decay_point:
+print(f"Nonlinear regression curve drops below R²=0.1 at {decay_point:.2f} cM")
+else:
+print("The regression curve never drops below R²=0.1 in the observed range")
