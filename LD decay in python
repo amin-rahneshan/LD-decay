@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
-df = pd.read_csv('C:\Users\Sepid\Desktop\LD for A,B,D.csv') # Load and clean data in csv file
+df = pd.read_csv('####################') # Load and clean data in csv file
 df['Dist_bp'] = df['Dist_bp'] / 100
 clean_df = df.copy()
 clean_df['R^2'] = pd.to_numeric(clean_df['R^2'], errors='coerce')
